@@ -4,32 +4,35 @@
 
 **PivotPoint is an attempt to build intelligence around a small local causal branching surface: choose an action now that changes what will become readable next.**
 
-Do not restart from “how wide is the present?”
+Do not restart from “how wide is the present?” and do not rename the core object unless data forces it.
 
 ---
 
-## Why this repo exists
+## The current decomposition
 
-The preceding work repeatedly converged on four distinct questions:
+Keep these questions separate:
 
-1. does a trace/state exist?
-2. is it readable by this receiver now?
-3. can an available action/trajectory make it readable next?
-4. if readable, does it actually control behavior?
+1. **existence** — does a useful trace/result/state exist at all?
+2. **access** — is it readable by this receiver now?
+3. **unfinished work** — has a process begun whose result does not exist yet?
+4. **reachable accessibility** — what available action/trajectory could make useful state readable next?
+5. **control** — if readable, can it actually alter behavior/system state?
 
-The new repo isolates #3 while retaining #1/#2/#4 as constraints.
+The repo is mainly about #3 and #4 while treating #1/#2/#5 as constraints.
 
-The key move is from **memory as stored content** to **re-entry as control of future observability**.
+The central question remains:
+
+> **CONTROL: what can I do now that changes what I will be able to read next?**
 
 ---
 
-## Core vocabulary — do not rename unless data forces it
+## Core vocabulary — keep stable
 
 ### PivotPoint
 A local state where materially different future readouts are reachable through currently feasible actions.
 
 ### Nominal option
-An action that can be represented/named.
+An action that can be represented or named.
 
 ### Effective option
 An action whose required downstream route is currently open enough to materially alter future state/accessibility.
@@ -41,7 +44,7 @@ Potential communication graph.
 Current effective influence graph after gates, modulators, receiver state, occupancy, resource constraints, etc.
 
 ### Modulator
-A slower control signal that changes gains/thresholds/persistence/routing/plasticity rather than carrying task content itself.
+A slower control signal that changes gain/threshold/persistence/routing/plasticity rather than carrying the task content itself.
 
 ### Reachable accessibility
 What can become readable next under actions/trajectories available from the current local state.
@@ -49,56 +52,115 @@ What can become readable next under actions/trajectories available from the curr
 ### Control degrees of freedom
 The effective number/dimension of materially different reachable futures, not the raw count of named actions.
 
+### Signal
+A payload already exists but is delayed/in flight to a receiver.
+
+### WorkItem
+A process has started but its result may literally not exist yet. Lifecycle: `PENDING -> SUCCEEDED/FAILED/CANCELLED`, with successful results remaining unread until `CONSUMED`.
+
+---
+
+## What exists now
+
+### `pivotpoint/core.py`
+Minimal substrate for:
+
+- delayed signals;
+- local inboxes;
+- fixed wiring;
+- modulated effective edge gain;
+- transparent action offers and a deliberately boring PivotPolicy.
+
+### `pivotpoint/work.py`
+Explicit process-present state:
+
+- owner and intended target;
+- pending work;
+- optional ETA;
+- success/failure/cancellation;
+- successful-but-unconsumed results;
+- local visibility rather than a global process table.
+
+Important distinction:
+
+```text
+Signal:
+    payload exists, route unfinished
+
+WorkItem:
+    computation itself unfinished; payload may not exist yet
+```
+
+### `pivotpoint/workers.py`
+Minimal `asyncio` adapter that mirrors **real** unfinished awaitables into `WorkRegistry`.
+
+This is not claimed as a new scheduler. `asyncio` is the baseline mechanism. Tests establish only lifecycle semantics: a fast result can become readable while a slow worker remains genuinely pending; failure and cancellation become explicit state.
+
+### `examples/git_reentry.py`
+First mundane product contact: inspect cheap git state and conditionally run expensive validation.
+
+### `examples/benchmark_git_reentry.py`
+Gate A wall-clock harness. It compares pivot vs eager verification on the current real working tree, alternates run order, and lets eager verification invalidate the pivot.
+
+If eager observes a failing validator that pivot skipped, verdict is:
+
+```text
+unsafe_skip_observed
+```
+
+Speed does not rescue that run.
+
+### Docs
+
+- `FOUNDING.md` — conceptual boundaries.
+- `WORK_STATE.md` — unfinished work vs delayed messages and baseline guardrails.
+- `GATE_A_REAL_REENTRY.md` — actual timing protocol and kill criteria.
+- this file — current frontier.
+
+### Tests / CI
+Known-answer tests cover delay, modulation, baseline policy, work lifecycle, local visibility, async completion order, worker failure, and cancellation.
+
+Toy/unit-test success is not architecture evidence.
+
 ---
 
 ## What NOT to claim
 
 - This is not a model of free will.
 - This is not a biological model of dopamine, serotonin, hormones, dendrites, or neurotransmission.
-- This is not evidence that memories are retrieved by consciously steering hippocampal waves.
-- This is not a claim that transformers cannot be agents; wrappers can add tools, memory, scheduling and asynchronous state.
-- A transformer may be a worker inside PivotPoint.
+- This is not evidence that memories are consciously steered through hippocampal waves.
+- This is not a new asynchronous scheduler.
+- This is not a new value-of-information algorithm.
+- A transformer can be a worker inside PivotPoint.
+- An ordinary transformer-agent given the same compact live-state snapshot is a mandatory future baseline.
 - Similarity to brains earns no score by itself.
 
 ---
 
-## What already exists in this repo
-
-- `README.md` — architecture and first falsifiable product gate.
-- `docs/FOUNDING.md` — conceptual boundaries, effective-vs-nominal options, control DOF, modulation and structural growth.
-- `docs/HANDOFF.md` — reboot-safe project state.
-- `pivotpoint/core.py` — minimal signals-in-flight + dynamic-effectome substrate + transparent action-offer policy.
-- `examples/git_reentry.py` — first real-command re-entry contact point.
-- `tests/test_core.py` + CI — known-answer tests for delay, effectome modulation and the baseline pivot policy.
-
-Immediate coding target: keep the runtime dependency-free and small enough to inspect in one short file.
-
----
-
-## Related work that should NOT be rediscovered from scratch
+## The most important inherited failures
 
 ### PerceptionLab
-The old checkerboard accident led to a calibrated wave-field demo. A local impulse propagated past separated probes with the expected lag. Useful lesson: persistent state alone is not “temporal thickness”; distinguishable causal ages require propagation/ringdown/different unfinished processes. Treat this as an instrument/demo result, not brain evidence.
+Persistent state alone was not temporally interesting. The calibrated wave-field demo showed the useful primitive cleanly: a single current state can contain consequences at different causal ages when real propagation/ringdown exists. Treat it as an instrument/demo result, not brain evidence.
 
 ### KYY
-Generic temporal ordering/locality stories were attacked. Monotone temporal ordering did not beat matched non-monotone contiguous blocks; residual advantage belonged largely to spatial contiguity. Do not resurrect “order itself is fundamental.”
+Generic temporal ordering/locality stories failed strong controls. Monotone temporal blocks did not beat matched non-monotone contiguous blocks; residual advantage belonged largely to spatial contiguity. KYY also established the methodological rule: geometry must beat strong algebraic/structured baselines, not merely solve the task.
+
+Carry that rule here:
+
+> PivotPoint must beat ordinary schedulers, dependency graphs, compact snapshots, and strong sequential-decision baselines when they receive the same information and budget.
 
 ### WidePresent
-A practical re-entry branch emerged: recorded state is cheap; measured state may require expensive tests/renders/network/model calls. Conditional probing may save cost over eager verified snapshots. The real test is wall-clock on real repos, not assigned toy costs.
+Completed transcript can alias distinct live worlds. The important difference may be unfinished work: “nothing requested” versus “refresh already in flight.” That observation motivated `WorkRegistry`.
 
-### PresentMoment — mouse spiral/task audit
-Last-night state before this repo opened:
+### PresentMoment
+The useful surviving brain-side object was receiver/state-dependent accessibility, but repeated estimator/control failures killed several prettier stories. Do not use neuroscience citations as evidence for PivotPoint.
 
-- Authors' task dataset is one ~14.21 GiB `task.zip`, but remote ZIP range reads can access individual members without downloading the archive.
-- The archive contains 1,157 members; small/processed task members were successfully extracted with `remotezip` in GitHub Actions.
-- Authors' behavioral plotting code uses four mice but computes one plotted SEM with `sqrt(6)`; visual error bars are therefore too small in that plot.
-- More importantly, their so-called pre-stimulus 2–8 Hz phase analysis samples the trial-alignment frame at/just after photodiode onset and the phase was generated with offline `filtfilt` + Hilbert processing. Therefore that code does **not cleanly establish** that genuinely pre-evidence state predicts detection.
-- A frozen past-only check was started using raw fluorescence from roughly -1.0 to -0.2 s, avoiding post-stimulus samples and avoiding the acausal phase variable.
-- On the two initially available mice (`ZYE_0088`, `ZYE_0090`), a simple stimulus/side baseline beat models augmented with local or six-site neural history on held-out log loss. This was a negative preliminary contact, not a final cohort result.
-- `ZYE_0085` and `ZYE_0091` were designated subject holdouts under the frozen specification.
-- **Their extraction completed successfully.** The GitHub Actions artifact contains `ZYE_0085_task_freq_to8Hz.mat` (~91 MiB) and `ZYE_0091_task_freq_to8Hz.mat` (~133 MiB). The conversation stopped before the frozen held-out analysis was run. The data branch itself did not fail.
+### FunctionalArbors
+A particularly relevant failure: credit transport could work while free structural credit assignment still failed. Recent activity or exact branch identity was not sufficient to identify which structural event caused the later useful outcome.
 
-Resume that work in **PresentMoment**, not here, unless its result directly becomes a PivotPoint benchmark.
+Therefore structural growth in PivotPoint must **not** use “active near later success” as credit. If growth is reopened, prefer a measured intervention mark such as change in reachable/readable state before vs after the structural event, with matched controls/counterfactual approximations.
+
+Do not implement growth yet.
 
 ---
 
@@ -106,14 +168,14 @@ Resume that work in **PresentMoment**, not here, unless its result directly beco
 
 Do not begin with a monolithic latent vector.
 
-Begin with:
-
 ```text
 specialized local workers
         │
-        ├── delayed / in-flight signals
+        ├── delayed signals whose payload already exists
         │
-        ├── local inboxes
+        ├── unfinished WorkItems whose result is not born yet
+        │
+        ├── local inboxes / local work visibility
         │
         ├── fixed possible wiring
         │       +
@@ -124,43 +186,101 @@ specialized local workers
         └── local action offers
                    │
                    ▼
-              PIVOT POLICY
+              SMALL PIVOT POLICY
                    │
         choose probe / route / wait /
-        inhibit / amplify / execute
+        inhibit / amplify / execute / cancel
                    │
                    ▼
          altered future accessibility
 ```
 
-The pivot policy should remain tiny initially. High-capacity semantic processing can be delegated to workers.
+High-capacity semantic processing can be delegated to workers. The controller should remain small until data forces otherwise.
 
 ---
 
-## Immediate experiments, in order
+## Immediate experiments — current order
 
-### 1. Real git/task re-entry
-Use the existing CLI to read cheap recorded facts and conditionally launch expensive measurements. Record real wall-clock and compare against eager verification. Include maintenance/schema cost in the discussion.
+### Gate A — run real re-entry receipts now
 
-**Kill:** if savings are small or task-specific logic dominates.
+The harness exists. Stop coding around it until some realistic repositories have receipts.
 
-### 2. Async held-out environment
-Use tasks with real variable-latency workers. Compare PivotPoint to a simple event loop/scheduler and to a transformer-agent baseline.
+Example:
 
-**Kill:** if an ordinary priority queue / behavior tree matches it with less machinery.
+```bash
+python examples/benchmark_git_reentry.py \
+    --repo . \
+    --test "python -m pytest -q" \
+    --docs-test "python -m mkdocs build --strict" \
+    --repeats 5 \
+    --json gate_a.json
+```
 
-### 3. Dynamic-effectome gate
-Fixed wiring, changing task regimes. Compare no modulation / one scalar / homogeneous receptors / heterogeneous receptors.
+Run on realistic interrupted/dirty trees, not clean checkouts.
 
-**Kill:** if the receptor/modulation layer adds no held-out adaptation benefit.
+**Kill/downgrade if:** unsafe eager-only failures appear, savings are small, classifier/schema maintenance dominates, or a compact verified snapshot/build dependency graph is cheaper and safer.
 
-### 4. Structural growth only after 1–3
-Test whether repeated unresolved pivots identify useful new routes. New branches must pay rent in held-out task cost, latency or success.
+### Gate B — asynchronous held-out environment
+
+Now that unfinished work is a real runtime object, build the comparison.
+
+Required baselines:
+
+1. ordinary event loop / priority queue;
+2. global barrier / wait-for-all where appropriate;
+3. compact full live-state snapshot;
+4. sequential value-of-information / optimal-stopping style baseline for tasks where that formulation applies;
+5. transformer-agent baseline later if the same task reasonably admits one.
+
+Do **not** hand-author worlds where acting locally is guaranteed to win. Use externally generated/held-out tasks or real variable-latency workers.
+
+Score at minimum:
+
+- task success/utility;
+- wall-clock/deadline misses;
+- compute/work launched;
+- cancelled/wasted work;
+- amount of live state exposed to the controller;
+- policy/schema complexity.
+
+**Kill:** if an ordinary scheduler/behavior tree/compact global snapshot matches PivotPoint with less machinery.
+
+### Gate C — dynamic effectome
+
+Only after Gate B has a fair harness.
+
+Fixed wiring, changing task regimes. Compare:
+
+- no modulation;
+- one global scalar;
+- multiple modulators with identical receptor profiles;
+- heterogeneous receptor profiles.
+
+**Kill:** if heterogeneous modulation adds no held-out adaptation benefit relative to simpler routing/adaptation methods.
+
+### Structural growth — still locked
+
+Only reopen if A/B/C earn it.
+
+If reopened, use measured causal change in accessibility/control rather than activity/reward proximity as eligibility.
+
+---
+
+## Mouse task branch (do not accidentally restart here)
+
+The PresentMoment mouse spiral/task audit remains a separate branch.
+
+Last known state:
+
+- remote extraction of the designated held-out task files for `ZYE_0085` and `ZYE_0091` completed;
+- initial two-mouse past-only models did not beat simple stimulus/side baselines;
+- the authors' nominal pre-stimulus phase analysis had a timing/acausal-filtering problem;
+- resume the frozen held-out analysis in **PresentMoment**, not PivotPoint, unless its result becomes a direct benchmark here.
 
 ---
 
 ## Process rule
 
-When the idea becomes smooth enough that every result is predictable, stop theorizing and find an external system with permission to say **no**.
+When the idea becomes smooth enough that every result is predictable, stop theorizing and find a system with permission to say **no**.
 
 Failures belong in this repository.
