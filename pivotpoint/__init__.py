@@ -10,9 +10,11 @@ from .core import (
     Signal,
 )
 from .work import WorkItem, WorkRegistry, WorkStatus
+from .workers import AsyncWorkerPool
 
 __all__ = [
     "ActionOffer",
+    "AsyncWorkerPool",
     "Edge",
     "ModulatorState",
     "PivotDecision",
