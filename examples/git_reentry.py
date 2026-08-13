@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Real-command re-entry demo for PivotPoint.
 
-This is intentionally mundane.  It asks whether a small local decision can
+This is intentionally mundane. It asks whether a small local decision can
 avoid creating expensive measurements that cannot affect the next action.
 
 Examples
@@ -21,8 +21,8 @@ Docs can have a separate validator:
         --test "python -m pytest -q" \
         --docs-test "python -m mkdocs build --strict"
 
-The script does NOT claim that its file classifier is intelligent.  It is a
-first wall-clock contact point.  If hand-maintaining classification logic costs
+The script does NOT claim that its file classifier is intelligent. It is a
+first wall-clock contact point. If hand-maintaining classification logic costs
 more than the saved measurements, the branch should die.
 """
 
@@ -94,6 +94,35 @@ def run_command(
     )
 
 
+def run_git_status(cwd: Path) -> Tuple[ProbeResult, str]:
+    """Return a compact receipt *and* full porcelain text for routing.
+
+    Validation command output is intentionally truncated in receipts, but git
+    status is itself the cheap observation used to choose the route. Routing
+    from a truncated tail silently loses files on large dirty trees, so the
+    classifier must see the full status output.
+    """
+    command = ["git", "status", "--porcelain"]
+    start = time.perf_counter()
+    cp = subprocess.run(
+        command,
+        cwd=str(cwd),
+        capture_output=True,
+        text=True,
+        errors="replace",
+    )
+    seconds = time.perf_counter() - start
+    probe = ProbeResult(
+        name="git_status",
+        command=" ".join(command),
+        seconds=seconds,
+        returncode=int(cp.returncode),
+        stdout_tail=cp.stdout[-2000:],
+        stderr_tail=cp.stderr[-2000:],
+    )
+    return probe, cp.stdout
+
+
 def parse_porcelain(text: str) -> List[str]:
     files: List[str] = []
     for raw in text.splitlines():
@@ -159,11 +188,7 @@ def main() -> None:
     probes: List[ProbeResult] = []
     t0 = time.perf_counter()
 
-    status = run_command(
-        ["git", "status", "--porcelain"],
-        cwd=repo,
-        name="git_status",
-    )
+    status, status_text = run_git_status(repo)
     probes.append(status)
     if status.returncode != 0:
         result = ReentryResult(
@@ -177,7 +202,7 @@ def main() -> None:
         print(json.dumps(asdict(result), indent=2))
         raise SystemExit(2)
 
-    changed_files = parse_porcelain(status.stdout_tail)
+    changed_files = parse_porcelain(status_text)
     route = classify_route(changed_files)
 
     if args.mode == "eager":
