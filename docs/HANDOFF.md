@@ -66,9 +66,12 @@ The effective number/dimension of materially different reachable futures, not th
 
 - `README.md` — architecture and first falsifiable product gate.
 - `docs/FOUNDING.md` — conceptual boundaries, effective-vs-nominal options, control DOF, modulation and structural growth.
+- `docs/HANDOFF.md` — reboot-safe project state.
 - `pivotpoint/core.py` — minimal signals-in-flight + dynamic-effectome substrate + transparent action-offer policy.
+- `examples/git_reentry.py` — first real-command re-entry contact point.
+- `tests/test_core.py` + CI — known-answer tests for delay, effectome modulation and the baseline pivot policy.
 
-Immediate coding target: keep the runtime dependency-free and small enough to inspect in one screenful/short file.
+Immediate coding target: keep the runtime dependency-free and small enough to inspect in one short file.
 
 ---
 
@@ -92,7 +95,8 @@ Last-night state before this repo opened:
 - More importantly, their so-called pre-stimulus 2–8 Hz phase analysis samples the trial-alignment frame at/just after photodiode onset and the phase was generated with offline `filtfilt` + Hilbert processing. Therefore that code does **not cleanly establish** that genuinely pre-evidence state predicts detection.
 - A frozen past-only check was started using raw fluorescence from roughly -1.0 to -0.2 s, avoiding post-stimulus samples and avoiding the acausal phase variable.
 - On the two initially available mice (`ZYE_0088`, `ZYE_0090`), a simple stimulus/side baseline beat models augmented with local or six-site neural history on held-out log loss. This was a negative preliminary contact, not a final cohort result.
-- `ZYE_0085` and `ZYE_0091` were designated subject holdouts under the frozen specification and extraction was launched.
+- `ZYE_0085` and `ZYE_0091` were designated subject holdouts under the frozen specification.
+- **Their extraction completed successfully.** The GitHub Actions artifact contains `ZYE_0085_task_freq_to8Hz.mat` (~91 MiB) and `ZYE_0091_task_freq_to8Hz.mat` (~133 MiB). The conversation stopped before the frozen held-out analysis was run. The data branch itself did not fail.
 
 Resume that work in **PresentMoment**, not here, unless its result directly becomes a PivotPoint benchmark.
 
@@ -136,7 +140,7 @@ The pivot policy should remain tiny initially. High-capacity semantic processing
 ## Immediate experiments, in order
 
 ### 1. Real git/task re-entry
-Build a CLI that reads cheap recorded facts and conditionally launches expensive measurements. Record real wall-clock and compare against eager verification. Include maintenance/schema cost in the discussion.
+Use the existing CLI to read cheap recorded facts and conditionally launch expensive measurements. Record real wall-clock and compare against eager verification. Include maintenance/schema cost in the discussion.
 
 **Kill:** if savings are small or task-specific logic dominates.
 
