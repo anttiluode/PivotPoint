@@ -9,6 +9,7 @@ from .core import (
     PivotRuntime,
     Signal,
 )
+from .work import WorkItem, WorkRegistry, WorkStatus
 
 __all__ = [
     "ActionOffer",
@@ -18,4 +19,7 @@ __all__ = [
     "PivotPolicy",
     "PivotRuntime",
     "Signal",
+    "WorkItem",
+    "WorkRegistry",
+    "WorkStatus",
 ]
