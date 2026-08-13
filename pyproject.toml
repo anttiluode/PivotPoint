@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pivotpoint"
+version = "0.0.1"
+description = "Small actionable-present primitives for asynchronous intelligence experiments"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.setuptools.packages.find]
+include = ["pivotpoint*"]
