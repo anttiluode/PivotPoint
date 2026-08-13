@@ -101,8 +101,12 @@ def run_git_status(cwd: Path) -> Tuple[ProbeResult, str]:
     status is itself the cheap observation used to choose the route. Routing
     from a truncated tail silently loses files on large dirty trees, so the
     classifier must see the full status output.
+
+    ``--untracked-files=all`` is also deliberate: otherwise Git may collapse an
+    untracked directory to one ``?? directory/`` entry, hiding mixed file types
+    inside the very observation used for routing.
     """
-    command = ["git", "status", "--porcelain"]
+    command = ["git", "status", "--porcelain", "--untracked-files=all"]
     start = time.perf_counter()
     cp = subprocess.run(
         command,
