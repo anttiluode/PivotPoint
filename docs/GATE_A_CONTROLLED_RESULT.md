@@ -79,15 +79,61 @@ harness verdict    no_material_savings
 
 Interpretation: expected. When code is dirty, both policies run the same validator and PivotPoint buys nothing except a few milliseconds of noise.
 
+## The harder baseline problem
+
+The controlled benchmark used **eager validation** as the only baseline. That is too weak for file-derived work.
+
+For work whose validity is a function of repository inputs, a dependency-aware/content-addressed build or test cache can often make the same decision more precisely:
+
+```text
+docs-only change
+    -> validator inputs unchanged
+    -> reuse prior verified result
+
+code change affecting only a subset
+    -> invalidate only dependent work
+```
+
+The present PivotPoint classifier is coarser:
+
+```text
+clean / docs / code_or_mixed
+```
+
+so on file-derived validation it has no demonstrated structural advantage over a verified dependency-aware cache and can be strictly worse on partial code changes.
+
+Do **not** claim that caching has zero unsafe-skip risk "by construction" in all real systems: undeclared dependencies, non-hermetic tests, environment state, network state and flakiness can also defeat caches. The correct conclusion is narrower and stronger:
+
+> **When the expensive question is determined by declared/versioned file inputs, PivotPoint's current filename policy is not the right competitor. Ordinary dependency tracking is the baseline to beat.**
+
+Making the test suite slower would not repair this benchmark; it would simply make the value of correct caching larger.
+
 ## Verdict
 
 ```text
 CONTROLLED_HARNESS_BEHAVES_AS_SPECIFIED
+FILE_STATE_REENTRY_NOT_YET_COMPETITIVE_WITH_DEPENDENCY_CACHE
 REAL_GATE_A_STILL_OPEN
 ```
 
 No `unsafe_skip_observed` occurred in these three controlled states.
 
-This does **not** promote the re-entry branch. The real gate still requires realistic interrupted worktrees with validators expensive enough that skipping one matters, and it must retain failures as aggressively as savings.
+This does **not** promote the re-entry branch.
 
-The important next receipt is not another synthetic PivotPoint edit. It is a genuine dirty project state with a real slow build/test/render/inference step. If those receipts show small absolute savings, eager-only failures, or project-specific routing logic expanding into a second build system, the branch should die or be downgraded exactly as preregistered.
+## Where Gate A should move
+
+The next discriminating test should use expensive state that is **not reducible to a hash of the repository tree**:
+
+- work already in flight;
+- remote result completed but not yet consumed;
+- transient network failure versus terminal failure;
+- another worker/process still producing an artifact;
+- external status that can change while the tree stays fixed.
+
+This is also the state class represented by `pivotpoint/work.py`: `PENDING`, `SUCCEEDED` but unread, `FAILED`, `CANCELLED`, and `CONSUMED`.
+
+A good concrete testbed already exists in `GeometricNeuronV22`: morphology recovery performs real Allen/NeuroMorpho requests, has real latency, successful remote results, and at least one published identifier that remains unresolved. Reissuing every request after interruption is waste; blindly trusting a local tree hash cannot tell whether a request is still in flight, has just completed elsewhere, or failed remotely.
+
+However, the strong baseline there is **not eager refetch**. It is an ordinary durable job/request ledger with idempotency plus whatever HTTP conditional caching the source supports. If PivotPoint cannot outperform or simplify that baseline, then the distinct language has not bought an engineering product; it has rediscovered workflow orchestration.
+
+That is the next honest gate.
