@@ -1,0 +1,86 @@
+name: Gate A controlled re-entry
+
+on:
+  push:
+    paths:
+      - '.github/workflows/gate-a-controlled.yml'
+      - 'examples/benchmark_git_reentry.py'
+      - 'examples/git_reentry.py'
+      - 'pivotpoint/**'
+      - 'tests/**'
+      - 'docs/GATE_A_REAL_REENTRY.md'
+  workflow_dispatch:
+
+jobs:
+  gate-a:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Baseline unit tests
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python -m unittest discover -s tests -v
+
+      - name: Controlled docs-only interrupted state
+        shell: bash
+        run: |
+          printf '\n<!-- Gate A controlled docs-only dirty state; checkout is disposable -->\n' >> docs/WORK_STATE.md
+          git status --short
+          python examples/benchmark_git_reentry.py \
+            --repo . \
+            --test "PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -v" \
+            --repeats 5 \
+            --json /tmp/gate_a_pivotpoint_docs_dirty.json
+
+      - name: Reset disposable checkout
+        shell: bash
+        run: |
+          git reset --hard HEAD
+          git clean -fd
+
+      - name: Controlled code-only interrupted state
+        shell: bash
+        run: |
+          printf '\n# Gate A controlled code dirty state; checkout is disposable\n' >> pivotpoint/core.py
+          git status --short
+          python examples/benchmark_git_reentry.py \
+            --repo . \
+            --test "PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -v" \
+            --repeats 5 \
+            --json /tmp/gate_a_pivotpoint_code_dirty.json
+
+      - name: Reset and clean-tree control
+        shell: bash
+        run: |
+          git reset --hard HEAD
+          git clean -fd
+          git status --short
+          python examples/benchmark_git_reentry.py \
+            --repo . \
+            --test "PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -v" \
+            --repeats 5 \
+            --json /tmp/gate_a_pivotpoint_clean.json
+
+      - name: Assemble receipts
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p gate-a-receipts
+          cp /tmp/gate_a_pivotpoint_*.json gate-a-receipts/ 2>/dev/null || true
+          ls -l gate-a-receipts
+
+      - name: Upload Gate A receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-a-pivotpoint-receipts
+          path: gate-a-receipts/*.json
+          if-no-files-found: warn
